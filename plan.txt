@@ -1,0 +1,14 @@
+SERVER:
+[x] Sniff for echo requests
+[ ] Send an echo-reply with a custom payload
+[ ] There are 2 use-cases:
+  [ ] Sending new msgs, the server can echo the same payload
+  [ ] A user Requesting to retrieve their msgs, custom payload is needed
+
+
+CLIENT:
+[ ] Sniff for echo-reply requests
+[ ] Send a new msg to the server as an echo msg
+[ ] Make sure a reply was received for the msg
+[ ] Send a special msg signalling a request for available msgs
+[ ] Keep sending special msgs until a special response FIN is received
