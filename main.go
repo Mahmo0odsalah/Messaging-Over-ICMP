@@ -3,6 +3,7 @@ package main
 // sudo iptables -A INPUT -p icmp --icmp-type 8 -j DROP
 import (
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
@@ -44,31 +45,30 @@ func main(){
     if err != nil {
       log.Panicf("Error in reading an ICMP packet: %s", err)
     }
+
   
     msg, err := icmp.ParseMessage(1, p)
     if err != nil {
       log.Panicf("Error in parsing an ICMP packet: %s", err)
     }
   
-    log.Println(msg);
     if(msg.Type == ipv4.ICMPTypeEcho){
-      body := msg.Body.(*icmp.Echo)
-      // go handleMessage(msg)
+      go handleMessage(msg, pn, addr)
+    }
+  }
+
+}
+
+func handleMessage(msg *icmp.Message, pn *icmp.PacketConn, addr net.Addr) {
+  body := msg.Body.(*icmp.Echo)
       msg.Type = ipv4.ICMPTypeEchoReply;
       msg.Body = &icmp.Echo{
         ID: body.ID,
         Seq: body.Seq,
         Data: []byte("Testing 123"),
       }
-      // b, _ := icm.Marshal()
-      // pn.WriteTo(addr, b)
-    }
-  }
-
-}
-
-func handleMessage(msg *icmp.Message) {
-
+      b, _ := msg.Marshal(nil)
+      pn.WriteTo(b, addr)
 }
 
 func enableEcho() {
