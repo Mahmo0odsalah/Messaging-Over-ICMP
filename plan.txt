@@ -8,7 +8,7 @@ SERVER:
 
 CLIENT:
 [ ] Sniff for echo-reply requests
-[ ] Send a new msg to the server as an echo msg
+[x] Send a new msg to the server as an echo msg
 [ ] Make sure a reply was received for the msg
 [ ] Send a special msg signalling a request for available msgs
 [ ] Keep sending special msgs until a special response FIN is received
