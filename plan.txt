@@ -2,7 +2,7 @@ SERVER:
 [x] Sniff for echo requests
 [x] Send an echo-reply with a custom payload
 [ ] There are 2 use-cases:
-  [ ] Sending new msgs, the server can echo the same payload
+  [x] Sending new msgs, the server can echo the same payload
   [ ] A user Requesting to retrieve their msgs, custom payload is needed
 
 
