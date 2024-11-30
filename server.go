@@ -5,6 +5,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"regexp"
+	"strings"
 	"sync"
 	"syscall"
 
@@ -13,7 +15,26 @@ import (
 )
 
 
-type state map[string]userState
+type state map[string]*userState
+
+func (s state) String() string{
+	res := "{\n"
+	for u, us := range s {
+		res += u
+		res += ": [\n"
+		for i, msg := range us.data {
+      if i > us.ptr {
+        res += ", "
+      }
+      if i >= us.ptr {
+        res += string(msg)
+      }
+		}
+		res += "]\n"
+	}
+	res += "}"
+	return res
+}
 
 type userState struct {
   data [][]byte
@@ -21,27 +42,30 @@ type userState struct {
   lock *sync.Mutex
 }
 
-func (us userState) getNext()[]byte {
+func (us *userState) getNext()([]byte, int) {
   us.lock.Lock()
   defer us.lock.Unlock()
-
   if us.ptr >= len(us.data) {
-    return make([]byte, 0)
+    return make([]byte, 0), 0
   }
+	msg := us.data[us.ptr]
   us.ptr += 1
-  return us.data[us.ptr]
+  return msg, len(msg)
 }
 
-func (us userState) append(msg []byte) {
+func (us *userState) append(msg []byte) {
   us.lock.Lock()
   defer us.lock.Unlock()
 
   us.data = append(us.data, msg)
-  us.ptr +=1
   return
 }
 
 var gs state = make(state, 1000)
+
+var rgsRgx, _ = regexp.Compile("register ([^ ]+)");
+var sndRgx, _ = regexp.Compile("^([^ :]+):(.+)")
+var rcvRgx, _ = regexp.Compile("receive:([^ :]+)")
 
 
 func RunServer(){
@@ -54,19 +78,10 @@ func RunServer(){
   defer c.Close()
   log.Println("Listening to incoming ICMP packets")
  
-  p := make([]byte, 1500)
+
   for {
+    p := make([]byte, 1500)
     n, addr, err := c.ReadFrom(p)
-    // Creating entries for first time users needs to happen sync to avoid overriding when the same new user sends multiple packets in quick succession
-    _, fnd := gs[addr.String()]
-    if fnd == false {
-      us := userState{
-        make([][]byte, 10),
-        0,
-        &sync.Mutex{},
-      }
-      gs[addr.String()] = us
-    }
 
     if err != nil {
       log.Panicf("Error in reading an ICMP packet: %s", err)
@@ -86,21 +101,52 @@ func RunServer(){
 
 
 func handleServerMsg(msg *icmp.Message, n int, pn *icmp.PacketConn, addr net.Addr) {
-  // assume everyone is sending msgs now
   body := msg.Body.(*icmp.Echo)
-  us := gs[addr.String()]
   d := body.Data[:n-8]
-	log.Println(string(d))
-  us.append(d)
-  mode := 's' // TODO: Calculate mode based on the msg content (d), a special code should mean receive, anything else is send
-  msg.Type = ipv4.ICMPTypeEchoReply;
+  sd := strings.TrimSpace(string(d))
+
   var rd []byte
-  if mode == 's' {
-     rd = d
-     
-  } else {
-    rd = []byte("received")
-  }
+	switch {
+	case rgsRgx.Match(d):
+		// TODO: Handle already existing user
+		u := rgsRgx.FindStringSubmatch(string(d))[1]
+		us := userState{
+			make([][]byte, 0),
+			0,
+			&sync.Mutex{},
+		}
+		gs[u] = &us
+
+		rd = d
+  case rcvRgx.Match(d):
+		u := rcvRgx.FindStringSubmatch(sd)[1]
+		us, exs := gs[u]
+		if exs {
+			mb, nm := us.getNext()
+			if nm == 0 {
+				rd = []byte("No new messages")
+			} else {
+        rd = mb
+      }
+		} else {
+      rd = []byte("User doesn't exist")
+    }
+  case sndRgx.Match(d):
+    ms := sndRgx.FindStringSubmatch(sd)
+    uname := ms[1]
+    nm := ms[2]
+    us, uex := gs[uname]
+    if uex {
+			us.append([]byte(nm))
+			rd = d
+    } else {
+			rd = []byte("Target user not found")
+    }
+  default:
+    rd = []byte("To send a new msg, username:msg. To receive, receive:username")
+	}
+	
+	msg.Type = ipv4.ICMPTypeEchoReply;
   msg.Body = &icmp.Echo{
     ID: body.ID,
     Seq: body.Seq,

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strings"
 
 	"golang.org/x/net/icmp"
 	"golang.org/x/net/ipv4"
@@ -13,7 +14,7 @@ import (
 var c *icmp.PacketConn
 var srvr net.Addr
 
-func RunClient(srvrAddr string){
+func RunClient(srvrAddr string, usr string){
 	srvr = &net.IPAddr{IP: net.ParseIP(srvrAddr)}
 	var err error;
 	c, err = icmp.ListenPacket("ip4:icmp", "0.0.0.0")
@@ -22,22 +23,28 @@ func RunClient(srvrAddr string){
   }
   defer c.Close()
   log.Println("Listening to incoming ICMP packets")
- 
-  p := make([]byte, 1500)
+  
+  err = sendMsg("register " + usr)
+  if err != nil {
+    log.Panicln("Couldn't register")
+  }
 
+  
 	go readNewMessages()
   for {
+    p := make([]byte, 1500)
     _, _, err := c.ReadFrom(p)
 		if err != nil {
-			log.Panicf("Error in reading an ICMP packet: %s", err)
+      log.Panicf("Error in reading an ICMP packet: %s", err)
     }
 		
     msg, err := icmp.ParseMessage(1, p)
 		if err != nil {
-			log.Panicf("Error in parsing an ICMP packet: %s", err)
+      log.Panicf("Error in parsing an ICMP packet: %s", err)
 		}
 		
-		log.Println(msg)
+    prsd := msg.Body.(*icmp.Echo)
+    log.Println(strings.TrimSpace(string(prsd.Data)))
   }
 
 }
@@ -52,14 +59,14 @@ func readNewMessages(){
 	}
 }
 
-func sendMsg(cnt string){
+func sendMsg(m string) error{
 	msg := icmp.Message{
 		Type: ipv4.ICMPTypeEcho,
 		Code: 1,
 		Body: &icmp.Echo{
 			ID: os.Getpid() & 0xffff,
 			Seq: 1,
-			Data: []byte(cnt),
+			Data: []byte(m),
 		},
 	}
 
@@ -67,7 +74,9 @@ func sendMsg(cnt string){
 	_, err := c.WriteTo(mb, srvr)
 	if err != nil {
 		log.Println(err)
+    return err
 	}
+  return nil
 }
 
 func handleClientMsg(msg *icmp.Message, n int, pn *icmp.PacketConn, addr net.Addr) {

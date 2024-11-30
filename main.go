@@ -17,6 +17,6 @@ func main(){
     RunServer()
   } else {
     log.Println("Running in Client mode")
-    RunClient(os.Args[2])
+    RunClient(os.Args[2], os.Args[3])
   }
 }
