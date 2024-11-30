@@ -10,5 +10,9 @@ CLIENT:
 [x] Sniff for echo-reply requests
 [x] Send a new msg to the server as an echo msg
 [ ] Make sure a reply was received for the msg
-[x] Send a special msg signalling a request for available msgs
 [ ] Keep sending special msgs until a special response FIN is received
+[ ] Receiving shouldn't specify the username
+[ ] Incoming messages should show the sender
+[ ] Better CLI usage
+[ ] Handle registering already existing user
+[x] Send a special msg signalling a request for available msgs
