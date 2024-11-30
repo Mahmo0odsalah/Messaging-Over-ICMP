@@ -108,7 +108,7 @@ func handleServerMsg(msg *icmp.Message, n int, pn *icmp.PacketConn, addr net.Add
   var rd []byte
 	switch {
 	case rgsRgx.Match(d):
-		// TODO: Handle already existing user
+		// TODO: Handle registering already existing user
 		u := rgsRgx.FindStringSubmatch(string(d))[1]
 		us := userState{
 			make([][]byte, 0),

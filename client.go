@@ -78,27 +78,3 @@ func sendMsg(m string) error{
 	}
   return nil
 }
-
-func handleClientMsg(msg *icmp.Message, n int, pn *icmp.PacketConn, addr net.Addr) {
-  // assume everyone is sending msgs now
-  body := msg.Body.(*icmp.Echo)
-  us := gs[addr.String()]
-  d := body.Data[:n-8]
-  us.append(d)
-  mode := 's' // TODO: Calculate mode based on the msg content (d), a special code should mean receive, anything else is send
-  msg.Type = ipv4.ICMPTypeEchoReply;
-  var rd []byte
-  if mode == 's' {
-     rd = d
-     
-  } else {
-    rd = []byte("received")
-  }
-  msg.Body = &icmp.Echo{
-    ID: body.ID,
-    Seq: body.Seq,
-    Data: rd,
-  }
-  b, _ := msg.Marshal(nil)
-  pn.WriteTo(b, addr)
-}
