@@ -1,4 +1,4 @@
-module github.com/Mahmo0odsalah/icmp-messaging
+module github.com/Mahmo0odsalah/icmp-chat
 
 go 1.23.2
 
