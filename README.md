@@ -17,13 +17,13 @@ The program can run in either client or server mode. It needs root permissions i
 ## Server Mode
 
 To run the program in server mode.
-`./icmp-chat s`
+`./icmp-chat --server`
 
 There is no limit to clients using the same server.
 
 ## Client Mode
 
-`./icmp-chat c SERVER_IP USERNAME`
+`./icmp-chat --client --server-ip=SERVER_IP --username=USERNAME`
 
 Once in client mode, you can:
 

@@ -14,8 +14,8 @@ import (
 var c *icmp.PacketConn
 var srvr net.Addr
 
-func RunClient(srvrAddr string, usr string){
-	srvr = &net.IPAddr{IP: net.ParseIP(srvrAddr)}
+func RunClient(srvrAddr *net.IP, usr string){
+	srvr = &net.IPAddr{IP: *srvrAddr}
 	var err error;
 	c, err = icmp.ListenPacket("ip4:icmp", "0.0.0.0")
   if err != nil {
